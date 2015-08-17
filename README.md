@@ -29,59 +29,55 @@ require_once './vendor/autoload.php';
 Just add as any other middleware.
 
 ```php
-use Slim\Slim;
-use Jgut\Slim\Middleware\DoctrineMiddleware;
+// Create Slim app
+$app = new \Slim\App();
 
-$app = new Slim();
+// Fetch DI Container
+$container = $app->getContainer();
 
-...
+// Register Entity Manager in the container
+$container['entity_manager'] = function () {
+    return new \Jgut\Slim\Doctrine\EntitytManager;
+};
 
-$app->add(new DoctrineMiddleware());
+// Add routes
+$app->get('/', function () {
+    $this->entityManager->beginTransaction();
+    // Do your stuff
+    $this->entityManager->commit();
+});
+
+$app->run();
 ```
 
 ### Configuration
 
-There are two ways to configure Doctrine Middleware
-
-First by using `doctrine` key in Slim application configuration
-
 ```php
 // Minimun configuration
 $config = [
-    'doctrine' => [
-        'connection' => [
-            'driver' => 'pdo_sqlite',
-            'memory' => true,
-        ],
-        'annotation_paths' => ['path_to_entities_files'],
+    'connection' => [
+        'driver' => 'pdo_sqlite',
+        'memory' => true,
     ],
+    'annotation_paths' => ['path_to_entities_files'],
 ];
 
-$app = new Slim($config);
-$app->add(new DoctrineMiddleware());
-```
+// Create Slim app
+$app = new \Slim\App();
 
-Second way is assigning options directly to Doctrine Middleware
+// Fetch DI Container
+$container = $app->getContainer();
 
-```php
-$app = new Slim();
-
-$doctrineMiddleware = new DoctrineMiddleware();
-$doctrineMiddleware->setOption(
-    'connection',
-    ['driver' => 'pdo_sqlite', 'memory' => true]
-);
-$doctrineMiddleware->setOption('annotation_paths', ['path_to_entities_files']);
-$app->add($doctrineMiddleware);
+// Register Entity Manager in the container
+$container['entityManager'] = function () use ($config) {
+    return new \Jgut\Slim\Doctrine\EntitytManager($config);
+};
 ```
 
 ### Available configurations
 
-* `connection` array of PDO configurations
-* `cache_driver` array with Doctrine cache configurations
-    * `type` string representing cache type, `apc`, `xcache`, `memcache`, `redis` or `array`
-    * `host` string representing caching daemon host, needed for `memcache` and `redis`, defaults to '127.0.0.1'
-    * `port` string representing caching daemon port, optionally available for `memcache` (defaults to 11211) and `redis` (defaults to 6379)
+* `connection` array of PDO configurations or \Doctrine\DBAL\Connection
+* `cache_driver` \Doctrine\Common\Cache\Cache
 * `proxy_path` path were Doctrine creates its proxy classes, defaults to /tmp
 * `annotation_files` array of Doctrine annotations files
 * `annotation_namespaces` array of Doctrine annotations namespaces
